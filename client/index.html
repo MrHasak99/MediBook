@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MediBook — Book Your Doctor Appointment</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero">
+      <div class="container">
+        <h1>Your Health,<br>Simplified.</h1>
+        <p>Find the right doctor, book your appointment in minutes, and get AI-powered guidance on your symptoms.</p>
+        <div class="hero-actions">
+          <a href="/doctors.html" class="btn btn-lg" style="background:white;color:var(--blue-600);">Find a Doctor</a>
+          <a href="#ai-section" class="btn btn-lg btn-outline" style="border-color:rgba(255,255,255,.5);color:white;">Try AI Symptom Check</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="section" style="background:white;border-bottom:1px solid var(--gray-200);">
+      <div class="container">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-number" id="stat-doctors">—</div>
+            <div class="stat-label">Doctors</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="stat-specialties">—</div>
+            <div class="stat-label">Specialties</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">24/7</div>
+            <div class="stat-label">Online Booking</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">AI</div>
+            <div class="stat-label">Symptom Assistant</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI Symptom Checker -->
+    <section class="section" id="ai-section">
+      <div class="container">
+        <div class="ai-section">
+          <div class="ai-chat">
+            <h2>🩺 AI Symptom Assistant</h2>
+            <p>Describe how you're feeling and our AI will recommend the right specialist for you.</p>
+            <div class="ai-input-row">
+              <textarea id="symptom-input" placeholder="e.g. I've been having chest pain and shortness of breath for 2 days…"></textarea>
+              <button class="btn btn-primary btn-md" id="symptom-btn" style="height:72px;padding:0 1.25rem;">
+                Ask AI
+              </button>
+            </div>
+            <div id="ai-result" class="ai-result">
+              <p id="ai-reply"></p>
+              <div id="ai-specialty" class="ai-specialty hidden">
+                <span id="ai-specialty-name"></span>
+                <a id="ai-specialty-link" href="#" class="btn btn-primary btn-sm">Book with this specialty →</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Featured Doctors -->
+    <section class="section" style="background:white;">
+      <div class="container">
+        <h2 class="section-title">Our Doctors</h2>
+        <p class="section-subtitle">Browse our qualified specialists</p>
+        <div class="grid grid-3" id="featured-doctors">
+          <div class="skeleton" style="height:180px;border-radius:.75rem;"></div>
+          <div class="skeleton" style="height:180px;border-radius:.75rem;"></div>
+          <div class="skeleton" style="height:180px;border-radius:.75rem;"></div>
+        </div>
+        <div style="text-align:center;margin-top:2rem;">
+          <a href="/doctors.html" class="btn btn-outline btn-md">View All Doctors →</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2025 MediBook. All rights reserved. &nbsp;|&nbsp; <a href="/doctors.html">Find Doctors</a></p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/navbar.js"></script>
+  <script>
+    renderNavbar('home');
+
+    // Load stats & featured doctors
+    async function init() {
+      try {
+        const [doctorsRes, specialtiesRes] = await Promise.all([
+          api.getDoctors(),
+          api.getSpecialties(),
+        ]);
+        const doctors = doctorsRes.data || [];
+        const specialties = specialtiesRes.data || [];
+
+        document.getElementById('stat-doctors').textContent = doctors.length;
+        document.getElementById('stat-specialties').textContent = specialties.length;
+
+        const container = document.getElementById('featured-doctors');
+        const featured = doctors.slice(0, 3);
+        if (featured.length === 0) {
+          container.innerHTML = '<p class="text-gray text-sm">No doctors available yet.</p>';
+          return;
+        }
+        container.innerHTML = featured.map(doctorCardHTML).join('');
+      } catch (e) {
+        document.getElementById('featured-doctors').innerHTML = '<p class="text-gray text-sm">Could not load doctors.</p>';
+      }
+    }
+
+    function doctorCardHTML(d) {
+      return `
+        <div class="card" style="display:flex;flex-direction:column;">
+          <div class="card-body" style="flex:1;">
+            <div class="flex gap-3 items-center">
+              <div class="doctor-avatar" style="width:52px;height:52px;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+              </div>
+              <div>
+                <div style="font-weight:600;">Dr. ${d.profiles?.name || 'Unknown'}</div>
+                <span class="badge badge-info mt-1">${d.specialties?.name || 'General'}</span>
+              </div>
+            </div>
+            ${d.bio ? `<p class="text-sm text-gray mt-2" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${d.bio}</p>` : ''}
+          </div>
+          <div class="card-footer">
+            <a href="/doctor.html?id=${d.id}" class="btn btn-primary btn-sm btn-full">View &amp; Book</a>
+          </div>
+        </div>`;
+    }
+
+    // AI Symptom Check
+    const symptomBtn = document.getElementById('symptom-btn');
+    const symptomInput = document.getElementById('symptom-input');
+    const aiResult = document.getElementById('ai-result');
+    const aiReply = document.getElementById('ai-reply');
+    const aiSpecialty = document.getElementById('ai-specialty');
+    const aiSpecialtyName = document.getElementById('ai-specialty-name');
+    const aiSpecialtyLink = document.getElementById('ai-specialty-link');
+
+    symptomBtn.addEventListener('click', async () => {
+      const symptoms = symptomInput.value.trim();
+      if (!symptoms) return;
+
+      symptomBtn.disabled = true;
+      symptomBtn.classList.add('btn-loading');
+      symptomBtn.textContent = '';
+      aiResult.classList.remove('visible');
+
+      try {
+        const res = await api.symptomCheck(symptoms);
+        aiReply.textContent = res.reply;
+        aiResult.classList.add('visible');
+
+        if (res.suggested_specialty) {
+          aiSpecialtyName.textContent = `Suggested: ${res.suggested_specialty.name}`;
+          aiSpecialtyLink.href = `/doctors.html?specialty_id=${res.suggested_specialty.id}`;
+          aiSpecialty.classList.remove('hidden');
+        } else {
+          aiSpecialty.classList.add('hidden');
+        }
+      } catch (e) {
+        aiReply.textContent = e?.message || 'AI service is currently unavailable. Please try again later.';
+        aiResult.classList.add('visible');
+      } finally {
+        symptomBtn.disabled = false;
+        symptomBtn.classList.remove('btn-loading');
+        symptomBtn.textContent = 'Ask AI';
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>

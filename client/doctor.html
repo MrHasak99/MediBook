@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Doctor Profile — MediBook</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <!-- Doctor Hero -->
+  <section class="doctor-hero">
+    <div class="container">
+      <div class="doctor-hero-inner" id="doctor-hero">
+        <div class="skeleton" style="width:80px;height:80px;border-radius:50%;"></div>
+        <div style="flex:1;">
+          <div class="skeleton" style="height:28px;width:240px;margin-bottom:.5rem;"></div>
+          <div class="skeleton" style="height:16px;width:180px;"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <main class="page-wrapper">
+    <div class="container" style="max-width:860px;">
+
+      <!-- Alert area -->
+      <div id="alert-area"></div>
+
+      <div style="display:grid;grid-template-columns:1fr;gap:1.5rem;">
+        <!-- Booking Panel -->
+        <div class="card" id="booking-panel">
+          <div class="card-header">Book an Appointment</div>
+          <div class="card-body">
+            <div id="auth-required" class="hidden">
+              <div class="alert alert-info">
+                Please <a href="/auth/login.html">log in</a> as a patient to book an appointment.
+              </div>
+            </div>
+            <form id="booking-form" class="hidden">
+              <div style="display:flex;flex-direction:column;gap:1.25rem;">
+                <div class="form-group">
+                  <label class="form-label">Select Date</label>
+                  <input type="date" id="booking-date" class="form-input" />
+                  <span class="form-error hidden" id="date-error">Please select a date.</span>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Available Time Slots</label>
+                  <div class="slot-grid" id="slot-grid">
+                    <p class="text-sm text-gray">Select a date to see available slots.</p>
+                  </div>
+                  <span class="form-error hidden" id="slot-error">Please select a time slot.</span>
+                  <input type="hidden" id="selected-slot" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="reason">Reason for visit <span class="text-gray">(optional)</span></label>
+                  <textarea id="reason" class="form-textarea" placeholder="Briefly describe your symptoms or reason…"></textarea>
+                  <span class="form-error hidden" id="reason-error"></span>
+                </div>
+                <button type="submit" class="btn btn-primary btn-md" id="book-btn">Confirm Booking</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Doctor Info -->
+        <div class="card" id="doctor-info-card" style="display:none;">
+          <div class="card-header">About</div>
+          <div class="card-body" id="doctor-about"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer><p>© 2025 MediBook</p></footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/navbar.js"></script>
+  <script>
+    renderNavbar('doctors');
+
+    const params = new URLSearchParams(window.location.search);
+    const doctorId = params.get('id');
+    if (!doctorId) window.location.href = '/doctors.html';
+
+    let selectedSlot = null;
+    let session = null;
+    let profile = null;
+    let doctor = null;
+
+    function showAlert(msg, type = 'error') {
+      const area = document.getElementById('alert-area');
+      area.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+      area.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      setTimeout(() => area.innerHTML = '', 5000);
+    }
+
+    async function init() {
+      // Load session
+      const s = await getSession();
+      if (s) {
+        session = s;
+        profile = await getProfile(s.user.id);
+      }
+
+      // Load doctor
+      try {
+        const res = await api.getDoctorById(doctorId);
+        doctor = res.data;
+        renderDoctorHero(doctor);
+        renderDoctorAbout(doctor);
+      } catch {
+        document.getElementById('doctor-hero').innerHTML = '<p class="text-gray">Doctor not found.</p>';
+        return;
+      }
+
+      // Show booking form or login prompt
+      if (!session || profile?.role !== 'PATIENT') {
+        document.getElementById('auth-required').classList.remove('hidden');
+      } else {
+        document.getElementById('booking-form').classList.remove('hidden');
+      }
+
+      // Set min date to today
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('booking-date').min = today;
+      document.getElementById('booking-date').value = today;
+      loadSlots(today);
+    }
+
+    function renderDoctorHero(d) {
+      document.title = `Dr. ${d.profiles?.name} — MediBook`;
+      document.getElementById('doctor-hero').innerHTML = `
+        <div class="doctor-avatar">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        </div>
+        <div class="doctor-info">
+          <h1>Dr. ${d.profiles?.name || ''}</h1>
+          <div class="flex gap-2 items-center mt-1" style="flex-wrap:wrap;">
+            <span class="badge badge-info">${d.specialties?.name || 'General Practice'}</span>
+            ${d.experience_years ? `<span class="text-sm text-gray">· ${d.experience_years} years experience</span>` : ''}
+          </div>
+          ${d.specialties?.description ? `<p class="text-sm text-gray mt-1">${d.specialties.description}</p>` : ''}
+        </div>`;
+    }
+
+    function renderDoctorAbout(d) {
+      if (!d.bio) return;
+      document.getElementById('doctor-info-card').style.display = '';
+      document.getElementById('doctor-about').innerHTML = `<p class="text-sm" style="line-height:1.7;">${d.bio}</p>`;
+    }
+
+    async function loadSlots(date) {
+      const grid = document.getElementById('slot-grid');
+      grid.innerHTML = '<p class="text-sm text-gray">Loading slots…</p>';
+      selectedSlot = null;
+      document.getElementById('selected-slot').value = '';
+
+      try {
+        const res = await api.getDoctorSlots(doctorId, date);
+        const slots = res.data || [];
+        if (slots.length === 0) {
+          grid.innerHTML = '<p class="text-sm text-gray">No available slots for this date. Try another day.</p>';
+          return;
+        }
+        grid.innerHTML = slots.map(s => `
+          <button type="button" class="slot-btn" data-slot="${s}">${formatTime(s + ':00')}</button>
+        `).join('');
+
+        grid.querySelectorAll('.slot-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            grid.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedSlot = btn.dataset.slot;
+            document.getElementById('selected-slot').value = selectedSlot;
+          });
+        });
+      } catch {
+        grid.innerHTML = '<p class="text-sm text-gray">Could not load slots.</p>';
+      }
+    }
+
+    document.getElementById('booking-date')?.addEventListener('change', function() {
+      if (this.value) loadSlots(this.value);
+    });
+
+    document.getElementById('booking-form')?.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      // Clear errors
+      document.getElementById('date-error').classList.add('hidden');
+      document.getElementById('slot-error').classList.add('hidden');
+      document.getElementById('reason-error').classList.add('hidden');
+
+      const date = document.getElementById('booking-date').value;
+      const reason = document.getElementById('reason').value.trim();
+      let valid = true;
+
+      if (!date) {
+        document.getElementById('date-error').classList.remove('hidden');
+        valid = false;
+      }
+      if (!selectedSlot) {
+        document.getElementById('slot-error').classList.remove('hidden');
+        valid = false;
+      }
+      if (!valid) return;
+
+      const btn = document.getElementById('book-btn');
+      btn.disabled = true;
+      btn.classList.add('btn-loading');
+      btn.textContent = '';
+
+      try {
+        await api.createAppointment({
+          doctor_id: doctorId,
+          appointment_date: date,
+          start_time: selectedSlot,
+          reason: reason || undefined,
+        }, session.access_token);
+
+        showAlert('Appointment booked successfully!', 'success');
+        setTimeout(() => window.location.href = '/dashboard/patient.html', 1500);
+      } catch (err) {
+        showAlert(err.message || 'Failed to book appointment. Please try again.');
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('btn-loading');
+        btn.textContent = 'Confirm Booking';
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>

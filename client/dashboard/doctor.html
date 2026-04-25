@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Doctor Dashboard — MediBook</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="page-wrapper">
+    <div class="container">
+      <div class="dashboard-header">
+        <h1>My Schedule</h1>
+        <p class="text-gray" id="welcome-msg">Loading…</p>
+      </div>
+
+      <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.5rem;align-items:flex-end;">
+        <div class="form-group" style="min-width:160px;">
+          <label class="form-label">Filter by status</label>
+          <select id="status-filter" class="form-select">
+            <option value="">All</option>
+            <option value="PENDING">Pending</option>
+            <option value="CONFIRMED">Confirmed</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+        </div>
+        <div class="form-group" style="min-width:160px;">
+          <label class="form-label">Sort by date</label>
+          <select id="sort" class="form-select">
+            <option value="asc">Soonest first</option>
+            <option value="desc">Latest first</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="alert-area"></div>
+      <div id="appointments-list"></div>
+    </div>
+  </main>
+
+  <footer><p>© 2025 MediBook</p></footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/navbar.js"></script>
+  <script>
+    let currentSession = null;
+
+    function showAlert(msg, type = 'error') {
+      const area = document.getElementById('alert-area');
+      area.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+      setTimeout(() => area.innerHTML = '', 4000);
+    }
+
+    async function updateStatus(id, status) {
+      try {
+        await api.updateAppointmentStatus(id, status, currentSession.access_token);
+        showAlert(`Status updated to ${status}.`, 'success');
+        loadAppointments();
+      } catch (e) {
+        showAlert(e.message || 'Could not update status.');
+      }
+    }
+
+    async function loadAppointments() {
+      const list = document.getElementById('appointments-list');
+      list.innerHTML = `<div class="skeleton" style="height:100px;border-radius:.75rem;margin-bottom:1rem;"></div>`.repeat(3);
+
+      try {
+        const res = await api.getAppointments({
+          status: document.getElementById('status-filter').value,
+          sort: document.getElementById('sort').value,
+        }, currentSession.access_token);
+
+        const appts = res.data || [];
+
+        if (appts.length === 0) {
+          list.innerHTML = `<div class="empty-state"><p>No appointments found.</p></div>`;
+          return;
+        }
+
+        list.innerHTML = appts.map(a => cardHTML(a)).join('');
+
+        list.querySelectorAll('[data-action]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            if (!confirm(`Mark as ${btn.dataset.action}?`)) return;
+            btn.disabled = true;
+            await updateStatus(btn.dataset.id, btn.dataset.action);
+          });
+        });
+      } catch (e) {
+        list.innerHTML = `<p class="text-gray text-sm">Failed to load appointments.</p>`;
+      }
+    }
+
+    function cardHTML(a) {
+      const patient = a.profiles;
+      const actions = [];
+
+      if (a.status === 'PENDING') {
+        actions.push(`<button class="btn btn-primary btn-sm" data-action="CONFIRMED" data-id="${a.id}">Confirm</button>`);
+        actions.push(`<button class="btn btn-danger btn-sm" data-action="CANCELLED" data-id="${a.id}">Cancel</button>`);
+      }
+      if (a.status === 'CONFIRMED') {
+        actions.push(`<button class="btn btn-success btn-sm" data-action="COMPLETED" data-id="${a.id}">Complete</button>`);
+        actions.push(`<button class="btn btn-danger btn-sm" data-action="CANCELLED" data-id="${a.id}">Cancel</button>`);
+      }
+
+      return `
+        <div class="card mb-4">
+          <div class="card-body">
+            <div class="flex justify-between items-center" style="flex-wrap:wrap;gap:.75rem;">
+              <div>
+                <div style="font-weight:600;font-size:.9375rem;">
+                  ${patient?.name || 'Unknown Patient'}
+                  <span class="text-gray" style="font-weight:400;font-size:.8125rem;"> · ${patient?.email || ''}</span>
+                </div>
+                <div class="text-sm text-gray mt-1">
+                  ${formatDate(a.appointment_date)} &nbsp;·&nbsp; ${formatTime(a.start_time)} – ${formatTime(a.end_time)}
+                </div>
+                ${a.reason ? `<div class="text-sm text-gray mt-1" style="font-style:italic;">"${a.reason}"</div>` : ''}
+              </div>
+              <span class="badge ${STATUS_BADGE[a.status] || 'badge-default'}">${a.status}</span>
+            </div>
+          </div>
+          ${actions.length ? `<div class="card-footer" style="display:flex;gap:.5rem;flex-wrap:wrap;">${actions.join('')}</div>` : ''}
+        </div>`;
+    }
+
+    async function init() {
+      const result = await requireRole(['DOCTOR']);
+      if (!result) return;
+      currentSession = result.session;
+      document.getElementById('welcome-msg').textContent = `Dr. ${result.profile.name} — manage your appointments below.`;
+      renderNavbar('dashboard');
+      loadAppointments();
+
+      document.getElementById('status-filter').addEventListener('change', loadAppointments);
+      document.getElementById('sort').addEventListener('change', loadAppointments);
+    }
+
+    init();
+  </script>
+</body>
+</html>

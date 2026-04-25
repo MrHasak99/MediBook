@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel — MediBook</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="page-wrapper">
+    <div class="container">
+      <div class="dashboard-header">
+        <h1>Admin Panel</h1>
+        <p class="text-gray">Manage specialties, doctors, and appointments.</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="specialties">Specialties</button>
+        <button class="tab-btn" data-tab="doctors">Doctors</button>
+        <button class="tab-btn" data-tab="appointments">Appointments</button>
+      </div>
+
+      <div id="alert-area"></div>
+
+      <!-- Specialties Tab -->
+      <div class="tab-panel active" id="tab-specialties">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.75rem;">
+          <h2 style="font-size:1.125rem;font-weight:600;">Specialties</h2>
+          <button class="btn btn-primary btn-sm" id="add-specialty-btn">+ Add Specialty</button>
+        </div>
+        <div id="specialties-list"></div>
+
+        <!-- Add/Edit Specialty Modal -->
+        <div class="modal-overlay hidden" id="specialty-modal">
+          <div class="modal">
+            <h2 id="specialty-modal-title">Add Specialty</h2>
+            <form id="specialty-form" style="display:flex;flex-direction:column;gap:1rem;">
+              <div class="form-group">
+                <label class="form-label">Name</label>
+                <input type="text" id="specialty-name" class="form-input" placeholder="e.g. Cardiology" />
+                <span class="form-error hidden" id="specialty-name-error"></span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Description <span class="text-gray">(optional)</span></label>
+                <textarea id="specialty-desc" class="form-textarea" placeholder="Brief description…"></textarea>
+              </div>
+              <div class="modal-actions">
+                <button type="button" class="btn btn-outline btn-md" id="specialty-cancel-btn">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-md" id="specialty-submit-btn">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Doctors Tab -->
+      <div class="tab-panel" id="tab-doctors">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.75rem;">
+          <h2 style="font-size:1.125rem;font-weight:600;">Doctors</h2>
+          <button class="btn btn-primary btn-sm" id="add-doctor-btn">+ Add Doctor</button>
+        </div>
+        <div id="doctors-list"></div>
+
+        <!-- Add Doctor Modal -->
+        <div class="modal-overlay hidden" id="doctor-modal">
+          <div class="modal">
+            <h2>Add Doctor</h2>
+            <form id="doctor-form" style="display:flex;flex-direction:column;gap:1rem;">
+              <div class="form-group">
+                <label class="form-label">User Profile ID</label>
+                <input type="text" id="doctor-profile-id" class="form-input" placeholder="User's UUID from Supabase" />
+                <span class="form-error hidden" id="doctor-profile-error"></span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Specialty</label>
+                <select id="doctor-specialty" class="form-select">
+                  <option value="">Select specialty…</option>
+                </select>
+                <span class="form-error hidden" id="doctor-specialty-error"></span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Years of Experience</label>
+                <input type="number" id="doctor-exp" class="form-input" min="0" max="60" value="0" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Bio <span class="text-gray">(optional)</span></label>
+                <textarea id="doctor-bio" class="form-textarea"></textarea>
+              </div>
+              <div class="modal-actions">
+                <button type="button" class="btn btn-outline btn-md" id="doctor-cancel-btn">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-md">Add Doctor</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Appointments Tab -->
+      <div class="tab-panel" id="tab-appointments">
+        <h2 style="font-size:1.125rem;font-weight:600;margin-bottom:1rem;">All Appointments</h2>
+        <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.5rem;">
+          <select id="appt-status-filter" class="form-select" style="max-width:180px;">
+            <option value="">All Statuses</option>
+            <option value="PENDING">Pending</option>
+            <option value="CONFIRMED">Confirmed</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+          <select id="appt-sort" class="form-select" style="max-width:180px;">
+            <option value="asc">Soonest first</option>
+            <option value="desc">Latest first</option>
+          </select>
+        </div>
+        <div id="admin-appointments-list"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer><p>© 2025 MediBook</p></footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/navbar.js"></script>
+  <script>
+    let currentSession = null;
+    let editingSpecialtyId = null;
+
+    function showAlert(msg, type = 'error') {
+      const area = document.getElementById('alert-area');
+      area.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+      setTimeout(() => area.innerHTML = '', 4000);
+    }
+
+    // ── Tab switching ──
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+      });
+    });
+
+    // ── Specialties ──
+    async function loadSpecialties() {
+      const list = document.getElementById('specialties-list');
+      list.innerHTML = '<div class="skeleton" style="height:60px;border-radius:.5rem;"></div>';
+      const res = await api.getSpecialties();
+      const specialties = res.data || [];
+
+      // Also populate doctor specialty select
+      const sel = document.getElementById('doctor-specialty');
+      sel.innerHTML = '<option value="">Select specialty…</option>';
+      specialties.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id; opt.textContent = s.name;
+        sel.appendChild(opt);
+      });
+
+      if (specialties.length === 0) {
+        list.innerHTML = '<div class="empty-state"><p>No specialties yet.</p></div>';
+        return;
+      }
+
+      list.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:.75rem;">
+          ${specialties.map(s => `
+            <div class="card">
+              <div class="card-body flex justify-between items-center" style="flex-wrap:wrap;gap:.75rem;">
+                <div>
+                  <div style="font-weight:600;">${s.name}</div>
+                  ${s.description ? `<div class="text-sm text-gray">${s.description}</div>` : ''}
+                </div>
+                <div class="flex gap-2">
+                  <button class="btn btn-outline btn-sm edit-specialty" data-id="${s.id}" data-name="${s.name}" data-desc="${s.description || ''}">Edit</button>
+                  <button class="btn btn-danger btn-sm delete-specialty" data-id="${s.id}">Delete</button>
+                </div>
+              </div>
+            </div>`).join('')}
+        </div>`;
+
+      list.querySelectorAll('.edit-specialty').forEach(btn => {
+        btn.addEventListener('click', () => openSpecialtyModal(btn.dataset.id, btn.dataset.name, btn.dataset.desc));
+      });
+      list.querySelectorAll('.delete-specialty').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Delete this specialty?')) return;
+          try {
+            await api.deleteSpecialty(btn.dataset.id, currentSession.access_token);
+            showAlert('Specialty deleted.', 'success');
+            loadSpecialties();
+          } catch (e) { showAlert(e.message); }
+        });
+      });
+    }
+
+    function openSpecialtyModal(id = null, name = '', desc = '') {
+      editingSpecialtyId = id;
+      document.getElementById('specialty-modal-title').textContent = id ? 'Edit Specialty' : 'Add Specialty';
+      document.getElementById('specialty-name').value = name;
+      document.getElementById('specialty-desc').value = desc;
+      document.getElementById('specialty-name-error').classList.add('hidden');
+      document.getElementById('specialty-modal').classList.remove('hidden');
+    }
+
+    document.getElementById('add-specialty-btn').addEventListener('click', () => openSpecialtyModal());
+    document.getElementById('specialty-cancel-btn').addEventListener('click', () => {
+      document.getElementById('specialty-modal').classList.add('hidden');
+    });
+
+    document.getElementById('specialty-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const name = document.getElementById('specialty-name').value.trim();
+      const desc = document.getElementById('specialty-desc').value.trim();
+      const errEl = document.getElementById('specialty-name-error');
+
+      if (!name || name.length < 2) {
+        errEl.textContent = 'Name must be at least 2 characters.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      errEl.classList.add('hidden');
+
+      const btn = document.getElementById('specialty-submit-btn');
+      btn.disabled = true;
+      try {
+        if (editingSpecialtyId) {
+          await api.updateSpecialty(editingSpecialtyId, { name, description: desc || undefined }, currentSession.access_token);
+          showAlert('Specialty updated.', 'success');
+        } else {
+          await api.createSpecialty({ name, description: desc || undefined }, currentSession.access_token);
+          showAlert('Specialty added.', 'success');
+        }
+        document.getElementById('specialty-modal').classList.add('hidden');
+        loadSpecialties();
+      } catch (err) {
+        showAlert(err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // ── Doctors ──
+    async function loadDoctors() {
+      const list = document.getElementById('doctors-list');
+      list.innerHTML = '<div class="skeleton" style="height:60px;border-radius:.5rem;"></div>';
+      const res = await api.getDoctors();
+      const doctors = res.data || [];
+
+      if (doctors.length === 0) {
+        list.innerHTML = '<div class="empty-state"><p>No doctors registered yet.</p></div>';
+        return;
+      }
+      list.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:.75rem;">
+          ${doctors.map(d => `
+            <div class="card">
+              <div class="card-body flex justify-between items-center" style="flex-wrap:wrap;gap:.75rem;">
+                <div>
+                  <div style="font-weight:600;">Dr. ${d.profiles?.name || ''}</div>
+                  <div class="flex gap-2 mt-1">
+                    <span class="badge badge-info">${d.specialties?.name || 'Unassigned'}</span>
+                    ${d.experience_years ? `<span class="text-sm text-gray">${d.experience_years} yrs</span>` : ''}
+                  </div>
+                </div>
+                <button class="btn btn-danger btn-sm delete-doctor" data-id="${d.id}">Remove</button>
+              </div>
+            </div>`).join('')}
+        </div>`;
+
+      list.querySelectorAll('.delete-doctor').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Remove this doctor?')) return;
+          btn.disabled = true;
+          try {
+            await api.deleteDoctor(btn.dataset.id, currentSession.access_token);
+            showAlert('Doctor removed.', 'success');
+            loadDoctors();
+          } catch (e) { showAlert(e.message); btn.disabled = false; }
+        });
+      });
+    }
+
+    document.getElementById('add-doctor-btn').addEventListener('click', () => {
+      document.getElementById('doctor-modal').classList.remove('hidden');
+    });
+    document.getElementById('doctor-cancel-btn').addEventListener('click', () => {
+      document.getElementById('doctor-modal').classList.add('hidden');
+    });
+
+    document.getElementById('doctor-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const profileId  = document.getElementById('doctor-profile-id').value.trim();
+      const specialtyId = document.getElementById('doctor-specialty').value;
+      const exp        = parseInt(document.getElementById('doctor-exp').value, 10) || 0;
+      const bio        = document.getElementById('doctor-bio').value.trim();
+
+      let valid = true;
+      if (!profileId) {
+        document.getElementById('doctor-profile-error').textContent = 'Profile ID is required.';
+        document.getElementById('doctor-profile-error').classList.remove('hidden');
+        valid = false;
+      }
+      if (!specialtyId) {
+        document.getElementById('doctor-specialty-error').textContent = 'Select a specialty.';
+        document.getElementById('doctor-specialty-error').classList.remove('hidden');
+        valid = false;
+      }
+      if (!valid) return;
+
+      try {
+        await api.createDoctor({ profile_id: profileId, specialty_id: specialtyId, experience_years: exp, bio: bio || undefined }, currentSession.access_token);
+        showAlert('Doctor added.', 'success');
+        document.getElementById('doctor-modal').classList.add('hidden');
+        loadDoctors();
+      } catch (err) { showAlert(err.message); }
+    });
+
+    // ── Admin Appointments ──
+    async function loadAdminAppointments() {
+      const list = document.getElementById('admin-appointments-list');
+      list.innerHTML = '<div class="skeleton" style="height:80px;border-radius:.5rem;"></div>'.repeat(3);
+      try {
+        const res = await api.getAppointments({
+          status: document.getElementById('appt-status-filter').value,
+          sort: document.getElementById('appt-sort').value,
+        }, currentSession.access_token);
+        const appts = res.data || [];
+        if (appts.length === 0) { list.innerHTML = '<div class="empty-state"><p>No appointments.</p></div>'; return; }
+        list.innerHTML = appts.map(a => `
+          <div class="card mb-4">
+            <div class="card-body flex justify-between items-center" style="flex-wrap:wrap;gap:.75rem;">
+              <div>
+                <div style="font-weight:600;">${a.profiles?.name || 'Patient'} → Dr. ${a.doctors?.profiles?.name || 'Doctor'}</div>
+                <div class="text-sm text-gray mt-1">${formatDate(a.appointment_date)} · ${formatTime(a.start_time)}</div>
+                ${a.reason ? `<div class="text-sm text-gray" style="font-style:italic;">"${a.reason}"</div>` : ''}
+              </div>
+              <span class="badge ${STATUS_BADGE[a.status] || 'badge-default'}">${a.status}</span>
+            </div>
+          </div>`).join('');
+      } catch (e) { list.innerHTML = '<p class="text-gray text-sm">Failed to load.</p>'; }
+    }
+
+    document.getElementById('appt-status-filter').addEventListener('change', loadAdminAppointments);
+    document.getElementById('appt-sort').addEventListener('change', loadAdminAppointments);
+
+    async function init() {
+      const result = await requireRole(['ADMIN']);
+      if (!result) return;
+      currentSession = result.session;
+      renderNavbar('dashboard');
+      loadSpecialties();
+      loadDoctors();
+      loadAdminAppointments();
+    }
+
+    init();
+  </script>
+</body>
+</html>

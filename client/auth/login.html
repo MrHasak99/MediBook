@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Log In — MediBook</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="auth-page">
+    <div class="auth-card">
+      <h1>Welcome back</h1>
+      <p>Log in to manage your appointments.</p>
+
+      <div id="alert-area"></div>
+
+      <form id="login-form" class="auth-form" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="email">Email</label>
+          <input type="email" id="email" class="form-input" placeholder="you@example.com" autocomplete="email" />
+          <span class="form-error hidden" id="email-error"></span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input type="password" id="password" class="form-input" placeholder="••••••••" autocomplete="current-password" />
+          <span class="form-error hidden" id="password-error"></span>
+        </div>
+        <button type="submit" class="btn btn-primary btn-md btn-full" id="submit-btn">Log In</button>
+      </form>
+
+      <div class="auth-footer">
+        Don't have an account? <a href="/auth/register.html">Sign up</a>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/navbar.js"></script>
+  <script>
+    renderNavbar();
+    redirectIfAuthed();
+
+    function showAlert(msg, type = 'error') {
+      document.getElementById('alert-area').innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+    }
+
+    function showFieldError(id, msg) {
+      const el = document.getElementById(id);
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+
+    function clearErrors() {
+      ['email-error', 'password-error'].forEach(id => {
+        const el = document.getElementById(id);
+        el.textContent = '';
+        el.classList.add('hidden');
+      });
+      document.getElementById('alert-area').innerHTML = '';
+    }
+
+    function validate() {
+      let valid = true;
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!email) {
+        showFieldError('email-error', 'Email is required.');
+        valid = false;
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showFieldError('email-error', 'Enter a valid email address.');
+        valid = false;
+      }
+
+      if (!password) {
+        showFieldError('password-error', 'Password is required.');
+        valid = false;
+      }
+
+      return valid;
+    }
+
+    document.getElementById('login-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      clearErrors();
+      if (!validate()) return;
+
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+      btn.classList.add('btn-loading');
+      btn.textContent = '';
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+
+        // Get role and redirect
+        const { data: { session } } = await supabase.auth.getSession();
+        const profile = await getProfile(session.user.id);
+        const routes = { PATIENT: '/dashboard/patient.html', DOCTOR: '/dashboard/doctor.html', ADMIN: '/dashboard/admin.html' };
+        window.location.href = routes[profile?.role] || '/index.html';
+      } catch (err) {
+        showAlert(err.message || 'Login failed. Please check your credentials.');
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('btn-loading');
+        btn.textContent = 'Log In';
+      }
+    });
+  </script>
+</body>
+</html>

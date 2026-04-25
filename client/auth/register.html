@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign Up — MediBook</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="auth-page">
+    <div class="auth-card">
+      <h1>Create your account</h1>
+      <p>Join MediBook to book appointments online.</p>
+
+      <div id="alert-area"></div>
+
+      <form id="register-form" class="auth-form" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="name">Full Name</label>
+          <input type="text" id="name" class="form-input" placeholder="John Doe" autocomplete="name" />
+          <span class="form-error hidden" id="name-error"></span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="email">Email</label>
+          <input type="email" id="email" class="form-input" placeholder="you@example.com" autocomplete="email" />
+          <span class="form-error hidden" id="email-error"></span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input type="password" id="password" class="form-input" placeholder="At least 8 characters" autocomplete="new-password" />
+          <span class="form-error hidden" id="password-error"></span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="confirm-password">Confirm Password</label>
+          <input type="password" id="confirm-password" class="form-input" placeholder="Re-enter password" />
+          <span class="form-error hidden" id="confirm-error"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-md btn-full" id="submit-btn">Create Account</button>
+      </form>
+
+      <div class="auth-footer">
+        Already have an account? <a href="/auth/login.html">Log in</a>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/navbar.js"></script>
+  <script>
+    renderNavbar();
+    redirectIfAuthed();
+
+    const fields = ['name', 'email', 'password', 'confirm'];
+
+    function showAlert(msg, type = 'error') {
+      document.getElementById('alert-area').innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+    }
+
+    function showFieldError(id, msg) {
+      const el = document.getElementById(`${id}-error`);
+      if (!el) return;
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+
+    function clearErrors() {
+      fields.forEach(f => {
+        const el = document.getElementById(`${f}-error`);
+        if (el) { el.textContent = ''; el.classList.add('hidden'); }
+      });
+      document.getElementById('alert-area').innerHTML = '';
+    }
+
+    function validate() {
+      const name     = document.getElementById('name').value.trim();
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const confirm  = document.getElementById('confirm-password').value;
+      let valid = true;
+
+      if (!name || name.length < 2) {
+        showFieldError('name', 'Full name must be at least 2 characters.'); valid = false;
+      }
+      if (!email) {
+        showFieldError('email', 'Email is required.'); valid = false;
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showFieldError('email', 'Enter a valid email address.'); valid = false;
+      }
+      if (!password || password.length < 8) {
+        showFieldError('password', 'Password must be at least 8 characters.'); valid = false;
+      }
+      if (password !== confirm) {
+        showFieldError('confirm', 'Passwords do not match.'); valid = false;
+      }
+
+      return valid;
+    }
+
+    document.getElementById('register-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      clearErrors();
+      if (!validate()) return;
+
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+      btn.classList.add('btn-loading');
+      btn.textContent = '';
+
+      const name     = document.getElementById('name').value.trim();
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { name } },
+        });
+        if (error) throw error;
+
+        // Profile is created via Supabase DB trigger — just redirect
+        showAlert('Account created! Redirecting…', 'success');
+        setTimeout(() => window.location.href = '/dashboard/patient.html', 1200);
+      } catch (err) {
+        showAlert(err.message || 'Registration failed. Please try again.');
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('btn-loading');
+        btn.textContent = 'Create Account';
+      }
+    });
+  </script>
+</body>
+</html>
