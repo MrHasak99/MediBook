@@ -16,6 +16,7 @@ const PORT = process.env.PORT || 5000;
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   'https://medibook-hamad.netlify.app',
+  'https://medibook.hamadalkhalaf.com',
   'http://localhost:5500',
   'http://127.0.0.1:5500',
   'http://localhost:5501',
