@@ -3,8 +3,8 @@
 A full-stack web application for booking medical appointments. Patients can browse doctors by specialty, use the AI symptom assistant, and manage their bookings. Doctors and admins have role-specific dashboards.
 
 ## Live Demo
-- **Frontend:** `https://medibook.yourdomain.com` (Netlify)
-- **Backend API:** `https://medibook-api.onrender.com` (Render)
+- **Frontend:** `https://medibook.hamadalkhalaf.com` (Netlify)
+- **Backend API:** `https://medibook-in5r.onrender.com` (Render)
 
 ---
 
