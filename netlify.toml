@@ -1,0 +1,4 @@
+[build]
+  publish = "client"
+
+# The redirects are handled by client/_redirects

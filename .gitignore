@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+server/node_modules/
+
+# Environment variables
+.env
+server/.env
+
+# Local configuration
+client/js/config.js
+
+# OS files
+.DS_Store
