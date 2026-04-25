@@ -1,7 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { supabaseAdmin } from '../utils/supabase.js';
 
 export const authenticate = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -13,14 +10,8 @@ export const authenticate = async (req, res, next) => {
 
   const token = authHeader.split(' ')[1];
 
-  // Create a client scoped to the user's JWT
-  const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY,
-    { global: { headers: { Authorization: `Bearer ${token}` } } }
-  );
-
-  const { data: { user }, error } = await supabase.auth.getUser(token);
+  // Verify the user's JWT using the shared admin client
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
 
   if (error || !user) {
     res.status(401).json({ message: 'Invalid or expired token' });
@@ -28,7 +19,7 @@ export const authenticate = async (req, res, next) => {
   }
 
   // Fetch profile to get role
-  const { data: profile } = await supabase
+  const { data: profile } = await supabaseAdmin
     .from('profiles')
     .select('role')
     .eq('id', user.id)

@@ -63,6 +63,9 @@ var api = {
   updateAppointmentStatus: (id, status, token) =>
     apiFetch(`/api/appointments/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }, token),
 
+  deleteAppointment: (id, token) =>
+    apiFetch(`/api/appointments/${id}`, { method: 'DELETE' }, token),
+
   // --- AI ---
   symptomCheck: (symptoms) =>
     apiFetch('/api/ai/symptom-check', { method: 'POST', body: JSON.stringify({ symptoms }) }),

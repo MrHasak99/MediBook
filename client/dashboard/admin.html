@@ -340,9 +340,27 @@
                 <div class="text-sm text-gray mt-1">${formatDate(a.appointment_date)} · ${formatTime(a.start_time)}</div>
                 ${a.reason ? `<div class="text-sm text-gray" style="font-style:italic;">"${a.reason}"</div>` : ''}
               </div>
-              <span class="badge ${STATUS_BADGE[a.status] || 'badge-default'}">${a.status}</span>
+              <div class="flex gap-2 items-center">
+                <span class="badge ${STATUS_BADGE[a.status] || 'badge-default'}">${a.status}</span>
+                <button class="btn btn-danger btn-sm delete-appt-btn" data-id="${a.id}">Delete</button>
+              </div>
             </div>
           </div>`).join('');
+
+        list.querySelectorAll('.delete-appt-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            if (!confirm('Permanently delete this appointment?')) return;
+            btn.disabled = true;
+            try {
+              await api.deleteAppointment(btn.dataset.id, currentSession.access_token);
+              showAlert('Appointment deleted.', 'success');
+              loadAdminAppointments();
+            } catch (e) {
+              showAlert(e.message || 'Could not delete appointment.');
+              btn.disabled = false;
+            }
+          });
+        });
       } catch (e) { list.innerHTML = '<p class="text-gray text-sm">Failed to load.</p>'; }
     }
 

@@ -1,3 +1,10 @@
-# Netlify redirects
-# Serve index.html for the root
-/   /index.html   200
+# Netlify redirects — serve each HTML file directly (multi-page app)
+/                   /index.html         200
+/doctors            /doctors.html       200
+/doctor             /doctor.html        200
+/ai                 /ai.html            200
+/auth/login         /auth/login.html    200
+/auth/register      /auth/register.html 200
+/dashboard/patient  /dashboard/patient.html  200
+/dashboard/doctor   /dashboard/doctor.html   200
+/dashboard/admin    /dashboard/admin.html    200

@@ -13,9 +13,9 @@ A full-stack web application for booking medical appointments. Patients can brow
 | Layer     | Technology |
 |-----------|-----------|
 | Frontend  | Vanilla HTML, CSS, JavaScript |
-| Backend   | Node.js, Express, TypeScript |
-| Database & Auth | Supabase (PostgreSQL) |
-| AI Feature | Google Gemini 2.0 Flash |
+| Backend   | Node.js, Express (ESM) |
+| Database & Auth | Supabase (PostgreSQL + Auth) |
+| AI Feature | Google Gemini 2.5 Flash |
 | Frontend Deployment | Netlify |
 | Backend Deployment  | Render |
 
@@ -72,13 +72,13 @@ cd server
 npm install
 ```
 
-Edit `.env`:
+Create a `.env` file inside `server/`:
 ```
 PORT=5000
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 GEMINI_API_KEY=your_gemini_api_key
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:5500
 ```
 
 Run in development:
@@ -86,26 +86,37 @@ Run in development:
 npm run dev
 ```
 
-Build for production:
+Run in production:
 ```bash
-npm run build
 npm start
 ```
 
+### 2a. Seed the Database (optional but recommended)
+
+After running the SQL schema, populate the database with 10 sample doctors:
+
+```bash
+cd server
+npm run seed
+```
+
+This creates one doctor auth account per specialty with the password `password123`.
+
 ### 3. Frontend Setup
 
-Edit `client/js/config.js`:
+Edit `client/js/config.js` with your Supabase credentials and backend URL:
 ```js
-const CONFIG = {
+var CONFIG = {
   SUPABASE_URL: 'your_supabase_project_url',
   SUPABASE_ANON_KEY: 'your_supabase_anon_key',
-  API_URL: 'http://localhost:5000',  // Change to deployed URL in production
+  API_URL: 'http://localhost:5000',  // Change to deployed backend URL in production
 };
 ```
 
-Open `client/index.html` directly in a browser or serve with any static server:
+Serve the frontend with any static server:
 ```bash
 npx serve client
+# or open client/index.html directly in a browser (Live Server extension works too)
 ```
 
 ---
@@ -125,9 +136,9 @@ npx serve client
 2. Create a new **Web Service** on [render.com](https://render.com).
 3. Set:
    - **Root Directory:** `server`
-   - **Build Command:** `npm install && npm run build`
+   - **Build Command:** `npm install`
    - **Start Command:** `npm start`
-4. Add environment variables (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY, FRONTEND_URL).
+4. Add environment variables: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `FRONTEND_URL` (your Netlify URL).
 
 ---
 
@@ -183,5 +194,16 @@ It uses **Gemini 2.0 Flash** and is constrained to only suggest specialties that
 |------|----------|
 | Kilo (Claude) | Scaffolding backend controllers, routes, and middleware; generating HTML/CSS/JS pages; writing the Supabase schema and SQL trigger |
 | Accepted | Overall architecture, Supabase trigger for profile creation, API helper pattern in `api.js` |
-| Modified | Styling choices, slot generation logic, validation messages |
+| Modified | Styling choices, slot generation logic, validation messages, Gemini model selection and fallback strategy |
 | Rejected | Suggested using React — switched to vanilla JS for simplicity and demonstrability |
+
+---
+
+## No-AI Evaluation
+
+The following items were built or completed without AI assistance to demonstrate independent capability:
+
+- **Appointment conflict detection** (`appointmentController.js`): Wrote the time-slot conflict check logic manually — querying existing `PENDING`/`CONFIRMED` appointments for the same doctor, date, and start time before inserting a new booking.
+- **Slot generation logic** (`doctorController.js`): Hand-wrote the `getDoctorAvailableSlots` function that generates fixed 30-minute slots (09:00–16:30), fetches booked times from the database, and returns only the available ones.
+- **Client-side form validation** (`auth/register.html`): Wrote all validation rules (name length, email regex, password minimum, password confirmation match) and inline error display without AI.
+- **Role-based UI branching** (`index.html`, `doctors.html`, `ai.html`): Manually added session-aware logic that redirects doctors and admins away from patient-facing pages and adjusts the homepage UI based on the logged-in user's role.
