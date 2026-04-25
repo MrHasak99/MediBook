@@ -5,8 +5,8 @@ import {
   createSpecialty,
   updateSpecialty,
   deleteSpecialty,
-} from '../controllers/specialtyController';
-import { authenticate, authorize } from '../middlewares/authMiddleware';
+} from '../controllers/specialtyController.js';
+import { authenticate, authorize } from '../middlewares/authMiddleware.js';
 
 const router = Router();
 

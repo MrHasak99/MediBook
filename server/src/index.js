@@ -1,11 +1,11 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import specialtyRoutes from './routes/specialtyRoutes';
-import doctorRoutes from './routes/doctorRoutes';
-import appointmentRoutes from './routes/appointmentRoutes';
-import aiRoutes from './routes/aiRoutes';
-import { errorHandler, notFound } from './middlewares/errorMiddleware';
+import specialtyRoutes from './routes/specialtyRoutes.js';
+import doctorRoutes from './routes/doctorRoutes.js';
+import appointmentRoutes from './routes/appointmentRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
+import { errorHandler, notFound } from './middlewares/errorMiddleware.js';
 
 dotenv.config();
 

@@ -1,12 +1,11 @@
-import { Request, Response } from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { supabaseAdmin } from '../utils/supabase';
+import { supabaseAdmin } from '../utils/supabase.js';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 // POST /api/ai/symptom-check
-export const symptomCheck = async (req: Request, res: Response): Promise<void> => {
-  const { symptoms } = req.body as { symptoms?: string };
+export const symptomCheck = async (req, res) => {
+  const { symptoms } = req.body;
 
   if (!symptoms || symptoms.trim().length < 5) {
     res.status(400).json({ message: 'Please describe your symptoms (at least 5 characters).' });
@@ -16,11 +15,11 @@ export const symptomCheck = async (req: Request, res: Response): Promise<void> =
   // Fetch available specialties to constrain the AI to real options
   const { data: specialties } = await supabaseAdmin
     .from('specialties')
-    .select('name, description')
+    .select('id, name, description')
     .order('name');
 
   const specialtyList = (specialties ?? [])
-    .map((s: any) => `- ${s.name}${s.description ? ': ' + s.description : ''}`)
+    .map((s) => `- ${s.name}${s.description ? ': ' + s.description : ''}`)
     .join('\n');
 
   const prompt = `You are a helpful medical intake assistant for MediBook clinic.
@@ -45,34 +44,45 @@ Patient's symptoms: ${symptoms}`;
   const PRIMARY_MODEL = 'gemini-2.5-flash';
   const FALLBACK_MODEL = 'gemini-2.5-flash-lite';
 
-  async function generate(modelName: string): Promise<string> {
+  async function generate(modelName) {
     const model = genAI.getGenerativeModel({
       model: modelName,
-      generationConfig: { thinkingConfig: { thinkingBudget: 0 } } as any,
+      generationConfig: { thinkingConfig: { thinkingBudget: 0 } },
     });
     const result = await model.generateContent(prompt);
     return result.response.text();
   }
 
   try {
-    let reply: string;
+    let reply;
     try {
       reply = await generate(PRIMARY_MODEL);
-    } catch (primaryError: any) {
+    } catch (primaryError) {
       console.warn(`[Gemini] ${PRIMARY_MODEL} failed (${primaryError.message}), falling back to ${FALLBACK_MODEL}`);
       reply = await generate(FALLBACK_MODEL);
     }
 
-    // Find which specialty was mentioned
-    const matchedSpecialty = (specialties ?? []).find((s: any) =>
-      reply.includes(s.name)
+    // Find which specialty was mentioned using word-boundary regex.
+    // Simple substring matching (e.g. "ent") falsely matches inside common words
+    // like "patient", "treatment", "current", so we require whole-word boundaries.
+    const specialtyList2 = specialties ?? [];
+    const matchedSpecialty = specialtyList2.find((s) => {
+      const escaped = s.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`\\b${escaped}\\b`, 'i');
+      return regex.test(reply);
+    });
+
+    // Fall back to General Practice if no specialty could be identified
+    const generalPractice = specialtyList2.find((s) =>
+      s.name.toLowerCase() === 'general practice'
     );
+    const suggested_specialty = matchedSpecialty ?? generalPractice ?? null;
 
     res.json({
       reply,
-      suggested_specialty: matchedSpecialty ?? null,
+      suggested_specialty,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[Gemini Error]', error.message);
     res.status(500).json({ message: 'AI service temporarily unavailable. Please try again later.' });
   }

@@ -20,6 +20,18 @@ async function renderNavbar(activePage = '') {
     : `<a href="/auth/login.html" class="btn btn-ghost btn-sm">Log In</a>
        <a href="/auth/register.html" class="btn btn-primary btn-sm">Sign Up</a>`;
 
+  const isPatientOrGuest = !profile || profile.role === 'PATIENT';
+
+  const patientLinks = isPatientOrGuest
+    ? `<a href="/doctors.html" class="nav-link ${activePage === 'doctors' ? 'active' : ''}">Find Doctors</a>
+          <a href="/ai.html" class="nav-link ${activePage === 'ai' ? 'active' : ''}">AI Assistant</a>`
+    : '';
+
+  const patientLinksMobile = isPatientOrGuest
+    ? `<a href="/doctors.html" class="nav-link">Find Doctors</a>
+        <a href="/ai.html" class="nav-link">AI Assistant</a>`
+    : '';
+
   const html = `
     <nav class="navbar">
       <div class="container navbar-inner">
@@ -31,7 +43,7 @@ async function renderNavbar(activePage = '') {
           MediBook
         </a>
         <div class="navbar-links">
-          <a href="/doctors.html" class="nav-link ${activePage === 'doctors' ? 'active' : ''}">Find Doctors</a>
+          ${patientLinks}
           ${dashboardHref ? `<a href="${dashboardHref}" class="nav-link ${activePage === 'dashboard' ? 'active' : ''}">Dashboard</a>` : ''}
         </div>
         <div class="navbar-auth">${authHTML}</div>
@@ -40,7 +52,7 @@ async function renderNavbar(activePage = '') {
         </button>
       </div>
       <div class="nav-mobile" id="nav-mobile">
-        <a href="/doctors.html" class="nav-link">Find Doctors</a>
+        ${patientLinksMobile}
         ${dashboardHref ? `<a href="${dashboardHref}" class="nav-link">Dashboard</a>` : ''}
         <div class="nav-mobile-auth">${authHTML}</div>
       </div>

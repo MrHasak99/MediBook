@@ -88,7 +88,7 @@
       }
       if (!email) {
         showFieldError('email', 'Email is required.'); valid = false;
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
         showFieldError('email', 'Enter a valid email address.'); valid = false;
       }
       if (!password || password.length < 8) {
@@ -127,7 +127,11 @@
         showAlert('Account created! Redirecting…', 'success');
         setTimeout(() => window.location.href = '/dashboard/patient.html', 1200);
       } catch (err) {
-        showAlert(err.message || 'Registration failed. Please try again.');
+        if (err.message?.includes('rate limit')) {
+          showAlert('Email rate limit exceeded. Please try again in an hour or disable email confirmation in Supabase dashboard.');
+        } else {
+          showAlert(err.message || 'Registration failed. Please try again.');
+        }
       } finally {
         btn.disabled = false;
         btn.classList.remove('btn-loading');

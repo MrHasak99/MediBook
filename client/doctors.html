@@ -56,7 +56,23 @@
   <script src="/js/auth.js"></script>
   <script src="/js/navbar.js"></script>
   <script>
-    renderNavbar('doctors');
+    // Redirect doctors and admins away from this patient-facing page
+    (async () => {
+      const session = await getSession();
+      if (session) {
+        const profile = await getProfile(session.user.id);
+        if (profile && profile.role === 'DOCTOR') {
+          window.location.href = '/dashboard/doctor.html';
+          return;
+        }
+        if (profile && profile.role === 'ADMIN') {
+          window.location.href = '/dashboard/admin.html';
+          return;
+        }
+      }
+      renderNavbar('doctors');
+      loadSpecialties().then(loadDoctors);
+    })();
 
     const searchInput  = document.getElementById('search');
     const specialtyFilter = document.getElementById('specialty-filter');
@@ -67,7 +83,10 @@
 
     // Pre-fill specialty filter from URL param (e.g. from AI assistant)
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('specialty_id')) specialtyFilter.value = urlParams.get('specialty_id');
+    const urlSpecialtyId = urlParams.get('specialty_id');
+    if (urlSpecialtyId && urlSpecialtyId !== 'undefined' && urlSpecialtyId !== 'null') {
+      specialtyFilter.value = urlSpecialtyId;
+    }
 
     async function loadSpecialties() {
       try {
@@ -78,8 +97,10 @@
           opt.textContent = s.name;
           specialtyFilter.appendChild(opt);
         });
-        // Apply URL param after populating
-        if (urlParams.get('specialty_id')) specialtyFilter.value = urlParams.get('specialty_id');
+        // Apply URL param after populating options
+        if (urlSpecialtyId && urlSpecialtyId !== 'undefined' && urlSpecialtyId !== 'null') {
+          specialtyFilter.value = urlSpecialtyId;
+        }
       } catch {}
     }
 
@@ -136,8 +157,6 @@
     searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') loadDoctors(); });
     specialtyFilter.addEventListener('change', loadDoctors);
     sortInput.addEventListener('change', loadDoctors);
-
-    loadSpecialties().then(loadDoctors);
   </script>
 </body>
 </html>

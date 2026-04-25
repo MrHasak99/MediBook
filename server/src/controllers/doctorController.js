@@ -1,7 +1,5 @@
-import { Request, Response } from 'express';
 import { z } from 'zod';
-import { supabaseAdmin } from '../utils/supabase';
-import { AuthRequest } from '../middlewares/authMiddleware';
+import { supabaseAdmin } from '../utils/supabase.js';
 
 const doctorSchema = z.object({
   specialty_id: z.string().uuid('Invalid specialty ID'),
@@ -10,7 +8,7 @@ const doctorSchema = z.object({
 });
 
 // GET /api/doctors — with search, filter by specialty
-export const getDoctors = async (req: Request, res: Response): Promise<void> => {
+export const getDoctors = async (req, res) => {
   const { search, specialty_id, sort } = req.query;
 
   let query = supabaseAdmin
@@ -33,7 +31,7 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
   let result = data ?? [];
   if (search && typeof search === 'string') {
     const term = search.toLowerCase();
-    result = result.filter((d: any) =>
+    result = result.filter((d) =>
       d.profiles?.name?.toLowerCase().includes(term)
     );
   }
@@ -42,7 +40,7 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
 };
 
 // GET /api/doctors/:id
-export const getDoctorById = async (req: Request, res: Response): Promise<void> => {
+export const getDoctorById = async (req, res) => {
   const { id } = req.params;
 
   const { data, error } = await supabaseAdmin
@@ -60,7 +58,7 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
 };
 
 // GET /api/doctors/:id/slots?date=YYYY-MM-DD
-export const getDoctorAvailableSlots = async (req: Request, res: Response): Promise<void> => {
+export const getDoctorAvailableSlots = async (req, res) => {
   const { id } = req.params;
   const { date } = req.query;
 
@@ -83,14 +81,14 @@ export const getDoctorAvailableSlots = async (req: Request, res: Response): Prom
     .eq('appointment_date', date)
     .in('status', ['PENDING', 'CONFIRMED']);
 
-  const bookedTimes = new Set((booked ?? []).map((a: any) => a.start_time.slice(0, 5)));
+  const bookedTimes = new Set((booked ?? []).map((a) => a.start_time.slice(0, 5)));
   const available = allSlots.filter((slot) => !bookedTimes.has(slot));
 
   res.json({ data: available, date });
 };
 
 // POST /api/doctors — Admin registers a user as doctor
-export const createDoctor = async (req: Request, res: Response): Promise<void> => {
+export const createDoctor = async (req, res) => {
   const result = doctorSchema.safeParse(req.body);
 
   if (!result.success) {
@@ -98,7 +96,7 @@ export const createDoctor = async (req: Request, res: Response): Promise<void> =
     return;
   }
 
-  const { profile_id } = req.body as { profile_id: string };
+  const { profile_id } = req.body;
 
   if (!profile_id) {
     res.status(400).json({ message: 'profile_id is required' });
@@ -123,7 +121,7 @@ export const createDoctor = async (req: Request, res: Response): Promise<void> =
 };
 
 // PUT /api/doctors/:id
-export const updateDoctor = async (req: Request, res: Response): Promise<void> => {
+export const updateDoctor = async (req, res) => {
   const { id } = req.params;
   const result = doctorSchema.partial().safeParse(req.body);
 
@@ -148,7 +146,7 @@ export const updateDoctor = async (req: Request, res: Response): Promise<void> =
 };
 
 // DELETE /api/doctors/:id
-export const deleteDoctor = async (req: Request, res: Response): Promise<void> => {
+export const deleteDoctor = async (req, res) => {
   const { id } = req.params;
 
   const { error } = await supabaseAdmin.from('doctors').delete().eq('id', id);

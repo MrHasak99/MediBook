@@ -71,7 +71,7 @@
       if (!email) {
         showFieldError('email-error', 'Email is required.');
         valid = false;
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
         showFieldError('email-error', 'Enter a valid email address.');
         valid = false;
       }

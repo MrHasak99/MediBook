@@ -1,22 +1,9 @@
-import { Request, Response, NextFunction } from 'express';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-export interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    role: string;
-  };
-}
-
-export const authenticate = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
+export const authenticate = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -28,8 +15,8 @@ export const authenticate = async (
 
   // Create a client scoped to the user's JWT
   const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
     { global: { headers: { Authorization: `Bearer ${token}` } } }
   );
 
@@ -56,8 +43,8 @@ export const authenticate = async (
   next();
 };
 
-export const authorize = (roles: string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction): void => {
+export const authorize = (roles) => {
+  return (req, res, next) => {
     if (!req.user || !roles.includes(req.user.role)) {
       res.status(403).json({ message: 'Forbidden: insufficient permissions' });
       return;

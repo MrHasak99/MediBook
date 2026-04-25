@@ -6,8 +6,8 @@ import {
   createDoctor,
   updateDoctor,
   deleteDoctor,
-} from '../controllers/doctorController';
-import { authenticate, authorize } from '../middlewares/authMiddleware';
+} from '../controllers/doctorController.js';
+import { authenticate, authorize } from '../middlewares/authMiddleware.js';
 
 const router = Router();
 

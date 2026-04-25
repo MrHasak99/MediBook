@@ -1,7 +1,5 @@
-import { Request, Response } from 'express';
 import { z } from 'zod';
-import { supabaseAdmin } from '../utils/supabase';
-import { AuthRequest } from '../middlewares/authMiddleware';
+import { supabaseAdmin } from '../utils/supabase.js';
 
 const createAppointmentSchema = z.object({
   doctor_id: z.string().uuid('Invalid doctor ID'),
@@ -14,7 +12,7 @@ const updateStatusSchema = z.object({
   status: z.enum(['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED']),
 });
 
-function addMinutes(time: string, minutes: number): string {
+function addMinutes(time, minutes) {
   const [h, m] = time.split(':').map(Number);
   const total = (h ?? 0) * 60 + (m ?? 0) + minutes;
   const newH = Math.floor(total / 60).toString().padStart(2, '0');
@@ -23,8 +21,8 @@ function addMinutes(time: string, minutes: number): string {
 }
 
 // GET /api/appointments — patient sees own, doctor sees own
-export const getAppointments = async (req: AuthRequest, res: Response): Promise<void> => {
-  const user = req.user!;
+export const getAppointments = async (req, res) => {
+  const user = req.user;
   const { status, sort } = req.query;
   const sortOrder = sort === 'asc';
 
@@ -70,9 +68,9 @@ export const getAppointments = async (req: AuthRequest, res: Response): Promise<
 };
 
 // GET /api/appointments/:id
-export const getAppointmentById = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getAppointmentById = async (req, res) => {
   const { id } = req.params;
-  const user = req.user!;
+  const user = req.user;
 
   const { data, error } = await supabaseAdmin
     .from('appointments')
@@ -101,8 +99,8 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
 };
 
 // POST /api/appointments
-export const createAppointment = async (req: AuthRequest, res: Response): Promise<void> => {
-  const user = req.user!;
+export const createAppointment = async (req, res) => {
+  const user = req.user;
 
   if (user.role !== 'PATIENT') {
     res.status(403).json({ message: 'Only patients can book appointments' });
@@ -161,9 +159,9 @@ export const createAppointment = async (req: AuthRequest, res: Response): Promis
 };
 
 // PATCH /api/appointments/:id/status
-export const updateAppointmentStatus = async (req: AuthRequest, res: Response): Promise<void> => {
+export const updateAppointmentStatus = async (req, res) => {
   const { id } = req.params;
-  const user = req.user!;
+  const user = req.user;
 
   const result = updateStatusSchema.safeParse(req.body);
 
@@ -214,7 +212,7 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
 };
 
 // DELETE /api/appointments/:id — Admin only
-export const deleteAppointment = async (req: AuthRequest, res: Response): Promise<void> => {
+export const deleteAppointment = async (req, res) => {
   const { id } = req.params;
 
   const { error } = await supabaseAdmin.from('appointments').delete().eq('id', id);

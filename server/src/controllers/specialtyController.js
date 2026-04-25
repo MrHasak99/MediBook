@@ -1,6 +1,5 @@
-import { Request, Response } from 'express';
 import { z } from 'zod';
-import { supabaseAdmin } from '../utils/supabase';
+import { supabaseAdmin } from '../utils/supabase.js';
 
 const specialtySchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -8,7 +7,7 @@ const specialtySchema = z.object({
 });
 
 // GET /api/specialties
-export const getSpecialties = async (req: Request, res: Response): Promise<void> => {
+export const getSpecialties = async (req, res) => {
   const { search } = req.query;
 
   let query = supabaseAdmin.from('specialties').select('*').order('name');
@@ -28,7 +27,7 @@ export const getSpecialties = async (req: Request, res: Response): Promise<void>
 };
 
 // GET /api/specialties/:id
-export const getSpecialtyById = async (req: Request, res: Response): Promise<void> => {
+export const getSpecialtyById = async (req, res) => {
   const { id } = req.params;
 
   const { data, error } = await supabaseAdmin
@@ -46,7 +45,7 @@ export const getSpecialtyById = async (req: Request, res: Response): Promise<voi
 };
 
 // POST /api/specialties
-export const createSpecialty = async (req: Request, res: Response): Promise<void> => {
+export const createSpecialty = async (req, res) => {
   const result = specialtySchema.safeParse(req.body);
 
   if (!result.success) {
@@ -69,7 +68,7 @@ export const createSpecialty = async (req: Request, res: Response): Promise<void
 };
 
 // PUT /api/specialties/:id
-export const updateSpecialty = async (req: Request, res: Response): Promise<void> => {
+export const updateSpecialty = async (req, res) => {
   const { id } = req.params;
   const result = specialtySchema.partial().safeParse(req.body);
 
@@ -94,7 +93,7 @@ export const updateSpecialty = async (req: Request, res: Response): Promise<void
 };
 
 // DELETE /api/specialties/:id
-export const deleteSpecialty = async (req: Request, res: Response): Promise<void> => {
+export const deleteSpecialty = async (req, res) => {
   const { id } = req.params;
 
   const { error } = await supabaseAdmin

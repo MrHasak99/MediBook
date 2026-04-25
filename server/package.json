@@ -1,12 +1,12 @@
 {
   "name": "medibook-server",
   "version": "1.0.0",
-  "main": "dist/index.js",
+  "type": "module",
+  "main": "src/index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "seed": "npx ts-node src/seeds/seed.ts"
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js",
+    "seed": "node src/seeds/seed.js"
   },
   "keywords": [],
   "author": "",
@@ -21,10 +21,6 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.17",
-    "@types/express": "^4.17.21",
-    "@types/node": "^20.11.0",
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^5.3.3"
+    "nodemon": "^3.1.14"
   }
 }

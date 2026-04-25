@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Symptom Assistant — MediBook</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="page-wrapper">
+    <div class="container">
+      <div class="dashboard-header">
+        <h1>🩺 AI Symptom Assistant</h1>
+        <p class="text-gray">Describe how you're feeling and our AI will recommend the right specialist for you.</p>
+      </div>
+
+      <div class="ai-section">
+        <div class="ai-chat">
+          <div class="ai-input-row">
+            <textarea id="symptom-input" placeholder="e.g. I've been having chest pain and shortness of breath for 2 days…"></textarea>
+            <button class="btn btn-primary btn-md" id="symptom-btn" style="height:72px;padding:0 1.25rem;">
+              Ask AI
+            </button>
+          </div>
+          <div id="ai-result" class="ai-result">
+            <p id="ai-reply"></p>
+            <div id="ai-specialty" class="ai-specialty hidden">
+              <span id="ai-specialty-name"></span>
+              <a id="ai-specialty-link" href="#" class="btn btn-primary btn-sm">Book with this specialty →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:2rem;padding:1.25rem;background:var(--blue-50);border:1px solid var(--blue-100);border-radius:.75rem;">
+        <p class="text-sm" style="color:var(--blue-700);">
+          <strong>Disclaimer:</strong> The AI Symptom Assistant is for informational purposes only and does not constitute medical advice.
+          Always consult a qualified healthcare professional for diagnosis and treatment.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2025 MediBook. All rights reserved. &nbsp;|&nbsp; <a href="/doctors.html">Find Doctors</a></p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/navbar.js"></script>
+  <script>
+    // Redirect doctors and admins away from this patient-facing page
+    (async () => {
+      const session = await getSession();
+      if (session) {
+        const profile = await getProfile(session.user.id);
+        if (profile && profile.role === 'DOCTOR') {
+          window.location.href = '/dashboard/doctor.html';
+          return;
+        }
+        if (profile && profile.role === 'ADMIN') {
+          window.location.href = '/dashboard/admin.html';
+          return;
+        }
+      }
+      renderNavbar('ai');
+    })();
+
+    const symptomBtn = document.getElementById('symptom-btn');
+    const symptomInput = document.getElementById('symptom-input');
+    const aiResult = document.getElementById('ai-result');
+    const aiReply = document.getElementById('ai-reply');
+    const aiSpecialty = document.getElementById('ai-specialty');
+    const aiSpecialtyName = document.getElementById('ai-specialty-name');
+    const aiSpecialtyLink = document.getElementById('ai-specialty-link');
+
+    symptomBtn.addEventListener('click', async () => {
+      const symptoms = symptomInput.value.trim();
+      if (!symptoms) return;
+
+      symptomBtn.disabled = true;
+      symptomBtn.classList.add('btn-loading');
+      symptomBtn.textContent = '';
+      aiResult.classList.remove('visible');
+
+      try {
+        const res = await api.symptomCheck(symptoms);
+        aiReply.textContent = res.reply;
+        aiResult.classList.add('visible');
+
+        if (res.suggested_specialty) {
+          aiSpecialtyName.textContent = `Suggested: ${res.suggested_specialty.name}`;
+          aiSpecialtyLink.href = `/doctors.html?specialty_id=${res.suggested_specialty.id}`;
+          aiSpecialty.classList.remove('hidden');
+        } else {
+          aiSpecialty.classList.add('hidden');
+        }
+      } catch (e) {
+        aiReply.textContent = e?.message || 'AI service is currently unavailable. Please try again later.';
+        aiResult.classList.add('visible');
+      } finally {
+        symptomBtn.disabled = false;
+        symptomBtn.classList.remove('btn-loading');
+        symptomBtn.textContent = 'Ask AI';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { symptomCheck } from '../controllers/aiController';
+import { symptomCheck } from '../controllers/aiController.js';
 
 const router = Router();
 
