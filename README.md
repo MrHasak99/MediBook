@@ -8,6 +8,18 @@ A full-stack web application for booking medical appointments. Patients can brow
 
 ---
 
+## Demo Credentials
+
+Use these accounts to test role-specific features:
+
+| Role | Email | Password |
+|------|-------|----------|
+| **Patient** | `patient@medibook.test` | `patient` |
+| **Doctor** | `doctor@medibook.test` | `doctor` |
+| **Admin** | `admin@medibook.test` | `admin` |
+
+---
+
 ## Tech Stack
 
 | Layer     | Technology |
@@ -93,14 +105,19 @@ npm start
 
 ### 2a. Seed the Database (optional but recommended)
 
-After running the SQL schema, populate the database with 10 sample doctors:
+To create the basic test accounts (Patient, Doctor, Admin):
+```bash
+cd server
+npm run seed:basic
+```
 
+To populate the database with 10 sample doctors:
 ```bash
 cd server
 npm run seed
 ```
 
-This creates one doctor auth account per specialty with the password `password123`.
+The doctor accounts created by `npm run seed` use the password `password123`.
 
 ### 3. Frontend Setup
 
@@ -167,13 +184,6 @@ npx serve client
 | POST | `/api/doctors` | ADMIN | Register a doctor |
 | PUT | `/api/doctors/:id` | ADMIN/DOCTOR | Update doctor |
 | DELETE | `/api/doctors/:id` | ADMIN | Remove doctor |
-
----
-
-## Creating an Admin Account
-
-1. Register normally via the UI (creates a PATIENT account).
-2. In Supabase → Table Editor → `profiles`, find your user and change `role` to `ADMIN`.
 
 ---
 

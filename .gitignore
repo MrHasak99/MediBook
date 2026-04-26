@@ -11,3 +11,6 @@ client/js/config.js
 
 # OS files
 .DS_Store
+
+# Kilo transient files
+.kilo/plans/
