@@ -44,7 +44,7 @@
   </main>
 
   <footer>
-    <p>© 2025 MediBook. All rights reserved. &nbsp;|&nbsp; <a href="/doctors.html">Find Doctors</a></p>
+    <p>© 2025 MediBook. All rights reserved. &nbsp;|&nbsp; <a href="/doctors">Find Doctors</a></p>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -59,11 +59,11 @@
       if (session) {
         const profile = await getProfile(session.user.id);
         if (profile && profile.role === 'DOCTOR') {
-          window.location.href = '/dashboard/doctor.html';
+          window.location.href = '/dashboard/doctor';
           return;
         }
         if (profile && profile.role === 'ADMIN') {
-          window.location.href = '/dashboard/admin.html';
+          window.location.href = '/dashboard/admin';
           return;
         }
       }
@@ -94,7 +94,7 @@
 
         if (res.suggested_specialty) {
           aiSpecialtyName.textContent = `Suggested: ${res.suggested_specialty.name}`;
-          aiSpecialtyLink.href = `/doctors.html?specialty_id=${res.suggested_specialty.id}`;
+          aiSpecialtyLink.href = `/doctors?specialty_id=${res.suggested_specialty.id}`;
           aiSpecialty.classList.remove('hidden');
         } else {
           aiSpecialty.classList.add('hidden');

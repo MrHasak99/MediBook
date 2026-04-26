@@ -31,7 +31,7 @@
       </form>
 
       <div class="auth-footer">
-        Don't have an account? <a href="/auth/register.html">Sign up</a>
+        Don't have an account? <a href="/auth/register">Sign up</a>
       </div>
     </div>
   </main>
@@ -104,8 +104,8 @@
         // Get role and redirect
         const { data: { session } } = await supabase.auth.getSession();
         const profile = await getProfile(session.user.id);
-        const routes = { PATIENT: '/dashboard/patient.html', DOCTOR: '/dashboard/doctor.html', ADMIN: '/dashboard/admin.html' };
-        window.location.href = routes[profile?.role] || '/index.html';
+        const routes = { PATIENT: '/dashboard/patient', DOCTOR: '/dashboard/doctor', ADMIN: '/dashboard/admin' };
+        window.location.href = routes[profile?.role] || '/';
       } catch (err) {
         showAlert(err.message || 'Login failed. Please check your credentials.');
       } finally {

@@ -1,4 +1,10 @@
 [build]
   publish = "client"
 
+[build.processing]
+  skip_processing = false
+
+[build.processing.html]
+  pretty_urls = true
+
 # The redirects are handled by client/_redirects

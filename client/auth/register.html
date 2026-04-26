@@ -42,7 +42,7 @@
       </form>
 
       <div class="auth-footer">
-        Already have an account? <a href="/auth/login.html">Log in</a>
+        Already have an account? <a href="/auth/login">Log in</a>
       </div>
     </div>
   </main>
@@ -125,7 +125,7 @@
 
         // Profile is created via Supabase DB trigger — just redirect
         showAlert('Account created! Redirecting…', 'success');
-        setTimeout(() => window.location.href = '/dashboard/patient.html', 1200);
+        setTimeout(() => window.location.href = '/dashboard/patient', 1200);
       } catch (err) {
         if (err.message?.includes('rate limit')) {
           showAlert('Email rate limit exceeded. Please try again in an hour or disable email confirmation in Supabase dashboard.');

@@ -17,7 +17,7 @@ async function getProfile(userId) {
 }
 
 // Require auth — redirect to login if not signed in
-async function requireAuth(redirectTo = '/auth/login.html') {
+async function requireAuth(redirectTo = '/auth/login') {
   const session = await getSession();
   if (!session) {
     window.location.href = redirectTo;
@@ -27,7 +27,7 @@ async function requireAuth(redirectTo = '/auth/login.html') {
 }
 
 // Require a specific role
-async function requireRole(roles, redirectTo = '/index.html') {
+async function requireRole(roles, redirectTo = '/') {
   const session = await requireAuth();
   if (!session) return null;
 
@@ -40,7 +40,7 @@ async function requireRole(roles, redirectTo = '/index.html') {
 }
 
 // Redirect already-logged-in users away from auth pages
-async function redirectIfAuthed(redirectTo = '/dashboard/patient.html') {
+async function redirectIfAuthed(redirectTo = '/dashboard/patient') {
   const session = await getSession();
   if (!session) return;
 
@@ -48,9 +48,9 @@ async function redirectIfAuthed(redirectTo = '/dashboard/patient.html') {
   if (!profile) return;
 
   const routes = {
-    PATIENT: '/dashboard/patient.html',
-    DOCTOR: '/dashboard/doctor.html',
-    ADMIN: '/dashboard/admin.html',
+    PATIENT: '/dashboard/patient',
+    DOCTOR: '/dashboard/doctor',
+    ADMIN: '/dashboard/admin',
   };
   window.location.href = routes[profile.role] || redirectTo;
 }

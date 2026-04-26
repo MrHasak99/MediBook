@@ -62,11 +62,11 @@
       if (session) {
         const profile = await getProfile(session.user.id);
         if (profile && profile.role === 'DOCTOR') {
-          window.location.href = '/dashboard/doctor.html';
+          window.location.href = '/dashboard/doctor';
           return;
         }
         if (profile && profile.role === 'ADMIN') {
-          window.location.href = '/dashboard/admin.html';
+          window.location.href = '/dashboard/admin';
           return;
         }
       }
@@ -144,7 +144,7 @@
               ${d.experience_years ? `<p class="text-sm text-gray mt-2">🏥 ${d.experience_years} years experience</p>` : ''}
             </div>
             <div class="card-footer">
-              <a href="/doctor.html?id=${d.id}" class="btn btn-primary btn-sm btn-full">View &amp; Book</a>
+              <a href="/doctor?id=${d.id}" class="btn btn-primary btn-sm btn-full">View &amp; Book</a>
             </div>
           </div>
         `).join('');

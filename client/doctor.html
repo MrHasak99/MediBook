@@ -35,7 +35,7 @@
           <div class="card-body">
             <div id="auth-required" class="hidden">
               <div class="alert alert-info">
-                Please <a href="/auth/login.html">log in</a> as a patient to book an appointment.
+                Please <a href="/auth/login">log in</a> as a patient to book an appointment.
               </div>
             </div>
             <form id="booking-form" class="hidden">
@@ -85,7 +85,7 @@
 
     const params = new URLSearchParams(window.location.search);
     const doctorId = params.get('id');
-    if (!doctorId) window.location.href = '/doctors.html';
+    if (!doctorId) window.location.href = '/doctors';
 
     let selectedSlot = null;
     let session = null;
@@ -224,7 +224,7 @@
         }, session.access_token);
 
         showAlert('Appointment booked successfully!', 'success');
-        setTimeout(() => window.location.href = '/dashboard/patient.html', 1500);
+        setTimeout(() => window.location.href = '/dashboard/patient', 1500);
       } catch (err) {
         showAlert(err.message || 'Failed to book appointment. Please try again.');
       } finally {
